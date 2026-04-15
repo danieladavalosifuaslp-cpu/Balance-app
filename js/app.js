@@ -486,13 +486,12 @@ function deleteTask(btn) {
 
 // 7.1 Memoria RAM temporal
 let activeTimers = {}; 
-let lastStoppedTask = { name: "", duration: 0 }; // Guarda la tarea antes de mandarla a la base de datos
+let lastStoppedTask = { name: "", duration: 0 }; 
 
-// 7.2 Función: Control del tiempo (Play/Pause)
+// 7.2 Función: Control del tiempo (Play/Pause) con Reloj Absoluto
 function toggleTimer(btn) {
-    const timerDisplay = btn.previousElementSibling; // El texto "00:00:00"
+    const timerDisplay = btn.previousElementSibling; 
     
-    // Generar un ID único por tarea para que no se mezclen los tiempos
     if (!btn.dataset.timerId) btn.dataset.timerId = 'timer_' + Math.random().toString(36).substr(2, 9);
     const timerId = btn.dataset.timerId;
 
@@ -503,16 +502,21 @@ function toggleTimer(btn) {
         btn.style.color = "var(--color-lienzo)";
         btn.style.border = "none";
         
-        // Detenemos el intervalo de tiempo
+        // Detenemos el refresco de la pantalla
         clearInterval(activeTimers[timerId].interval);
         activeTimers[timerId].isRunning = false;
 
-        // ✨ CAPTURA DE DATOS: Guardamos qué tarea fue y cuánto duró en segundos
+        // Calculamos y guardamos el tiempo total acumulado hasta este milisegundo
+        const now = Date.now();
+        activeTimers[timerId].accumulated += (now - activeTimers[timerId].startTime);
+
+        // CAPTURA DE DATOS: Pasamos los milisegundos a segundos para el historial
+        const totalSeconds = Math.floor(activeTimers[timerId].accumulated / 1000);
         const taskItem = btn.closest('.sub-task-item');
         lastStoppedTask.name = taskItem.querySelector('.task-name').innerText;
-        lastStoppedTask.duration = activeTimers[timerId].seconds;
+        lastStoppedTask.duration = totalSeconds;
         
-        // Lanzamos el modal de energía para completar la captura del dato
+        // Lanzamos el modal de energía
         document.getElementById('energy-modal').classList.add('active');
     } else {
         // --- ESTADO: PLAY ---
@@ -521,23 +525,26 @@ function toggleTimer(btn) {
         btn.style.color = "var(--color-grafito)";
         btn.style.border = "2px solid var(--color-grafito)";
 
-        // Si es la primera vez que inicia, creamos el objeto en memoria
+        // Si es nuevo, lo inicializamos con 0 tiempo acumulado
         if (!activeTimers[timerId]) {
-            const parts = timerDisplay.innerText.split(':').map(Number);
-            const totalSeconds = (parts[0] * 3600) + (parts[1] * 60) + parts[2];
-            activeTimers[timerId] = { seconds: totalSeconds || 0, isRunning: true };
+            activeTimers[timerId] = { accumulated: 0, isRunning: true };
         } else {
             activeTimers[timerId].isRunning = true;
         }
 
-        // Motor de conteo (se ejecuta cada 1000ms = 1 segundo)
+        // Anotamos la hora exacta (milisegundos) en la que le dimos Play
+        activeTimers[timerId].startTime = Date.now();
+
+        // Refresco visual (se actualiza cada segundo para que tú veas el cambio)
         activeTimers[timerId].interval = setInterval(() => {
-            activeTimers[timerId].seconds++;
+            const now = Date.now();
+            // Tiempo real = lo que ya llevábamos guardado + lo que ha pasado desde el último Play
+            const totalMs = activeTimers[timerId].accumulated + (now - activeTimers[timerId].startTime);
+            const totalSecs = Math.floor(totalMs / 1000);
             
-            // Formateo matemático de Segundos a HH:MM:SS
-            const hrs = Math.floor(activeTimers[timerId].seconds / 3600);
-            const mins = Math.floor((activeTimers[timerId].seconds % 3600) / 60);
-            const secs = activeTimers[timerId].seconds % 60;
+            const hrs = Math.floor(totalSecs / 3600);
+            const mins = Math.floor((totalSecs % 3600) / 60);
+            const secs = totalSecs % 60;
             
             timerDisplay.innerText = 
                 String(hrs).padStart(2, '0') + ':' + 
