@@ -453,35 +453,45 @@ input[type="range"] {
     background-color: rgba(74, 74, 74, 0.3);
     border-radius: 10px;
 }
+
 /* =========================================
-   PARCHE NUCLEAR DE SCROLL PARA MÓVILES
+   SCROLL NATIVO Y FLUIDO (VERSIÓN LIMPIA)
 ========================================= */
 
-/* 1. Liberamos el cuerpo de la app */
+/* 1. Dejamos que el teléfono controle el scroll con su física natural */
 html, body {
-    overflow-y: auto !important;
-    height: auto !important;
-    overscroll-behavior-y: contain;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; 
+    overflow-y: visible; /* Regresa la fluidez nativa */
+    background-color: var(--color-lienzo);
 }
 
-/* 2. Liberamos todas las pantallas principales y les damos un colchón gigante */
-.app-container, 
+/* 2. El contenedor principal envuelve todo y le da espacio a la barra inferior */
+.app-container {
+    width: 100%;
+    min-height: 100vh;
+    padding-bottom: 110px; /* El único colchón necesario para la barra */
+    box-sizing: border-box;
+    border: none;
+}
+
+/* 3. Las pantallas ya no están encapsuladas, crecen con el contenido */
 #home-screen, 
 #task-bank-screen, 
 #cycle-screen, 
 #ia-screen {
-    overflow-y: auto !important;
-    height: auto !important;
-    min-height: 100vh !important;
-    padding-bottom: 150px !important; /* Colchón a prueba de balas para la barra de navegación */
+    height: auto !important; 
+    overflow: visible !important; /* Libera el contenido hacia el body */
 }
 
-/* 3. Liberamos las ventanas emergentes (como la lista de "Select Task") */
-.modal, 
-.modal-content, 
-.task-selection-container, 
+/* 4. Scroll interno SOLAMENTE para las listas emergentes (Modal) */
+.task-selection-container,
+.modal-content,
 .task-list {
-    overflow-y: auto !important;
-    max-height: 75vh !important; /* Evita que la ventana crezca más que la pantalla del celular */
-    padding-bottom: 50px !important; /* Espacio extra al final de la lista */
+    max-height: 65vh;      /* Evita que el menú crezca más que la pantalla */
+    overflow-y: auto;      /* Scroll interno suave */
+    padding-bottom: 20px;
+    -webkit-overflow-scrolling: touch; /* Activa el "rebote" suave en móviles */
 }
