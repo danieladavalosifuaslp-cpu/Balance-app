@@ -453,3 +453,35 @@ input[type="range"] {
     background-color: rgba(74, 74, 74, 0.3);
     border-radius: 10px;
 }
+/* =========================================
+   PARCHE NUCLEAR DE SCROLL PARA MÓVILES
+========================================= */
+
+/* 1. Liberamos el cuerpo de la app */
+html, body {
+    overflow-y: auto !important;
+    height: auto !important;
+    overscroll-behavior-y: contain;
+}
+
+/* 2. Liberamos todas las pantallas principales y les damos un colchón gigante */
+.app-container, 
+#home-screen, 
+#task-bank-screen, 
+#cycle-screen, 
+#ia-screen {
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    padding-bottom: 150px !important; /* Colchón a prueba de balas para la barra de navegación */
+}
+
+/* 3. Liberamos las ventanas emergentes (como la lista de "Select Task") */
+.modal, 
+.modal-content, 
+.task-selection-container, 
+.task-list {
+    overflow-y: auto !important;
+    max-height: 75vh !important; /* Evita que la ventana crezca más que la pantalla del celular */
+    padding-bottom: 50px !important; /* Espacio extra al final de la lista */
+}
