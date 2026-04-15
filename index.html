@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance - Prototype</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-container">
+
+    <div id="welcome-screen" class="screen active">
+        <div class="hero-logo-container">
+            <img src="assets/logo.png" alt="Balance Logo" class="logo-main" onerror="this.src='https://via.placeholder.com/250x250?text=Logo'">
+        </div>
+        <div class="welcome-text-container">
+            <h2 class="welcome-title">WELCOME!</h2>
+            <div class="links-container">
+                <button class="menu-link" onclick="goToScreen('login-screen')">Log in</button>
+                <button class="menu-link" onclick="goToScreen('register-screen')">Register</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-screen" class="screen">
+        <button class="back-btn" onclick="goToScreen('welcome-screen')">← Back</button>
+        <h2 class="section-title">Log in</h2>
+        <div class="form-group"><label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">USER NAME</label><br><input type="text" id="login-name" placeholder="e.g. user123"></div>
+        <div class="form-group"><label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">EMAIL</label><br><input type="email" id="login-email" placeholder="username@gmail.com"></div>
+        <div style="text-align: center; margin-top: 30px;"><button class="menu-link" onclick="loginUser()">ENTER</button></div>
+    </div>
+
+    <div id="register-screen" class="screen">
+        <button class="back-btn" onclick="goToScreen('welcome-screen')">← Back</button>
+        <h2 class="section-title">REGISTER</h2>
+        
+        <div class="form-group"><label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">USER NAME</label><br><input type="text" id="reg-name" placeholder="e.g. user123"></div>
+        <div class="form-group"><label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">EMAIL</label><br><input type="email" id="reg-email" placeholder="username@gmail.com"></div>
+        <div class="form-group"><label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">AGE</label><br><input type="number" id="reg-age" style="width: 40%; text-align: center;"></div>
+        
+        <div class="form-group">
+            <label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">IS YOUR CYCLE REGULAR?</label><br>
+            <span style="font-size: 0.8rem; opacity: 0.6; display: block; margin-bottom: 10px;">(~28 days)</span>
+            <div style="display: flex; justify-content: center; gap: 30px;">
+                <span class="text-toggle" id="btn-reg-yes" onclick="setRegularity(true)">YES</span>
+                <span class="text-toggle" id="btn-reg-no" onclick="setRegularity(false)">NO</span>
+            </div>
+        </div>
+
+        <div class="form-group" id="sop-question" style="display: none;">
+            <label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">UNDERLYING DIAGNOSIS?</label><br>
+            <input type="text" id="reg-dx" placeholder="e.g. SOP" style="width: 80%; text-align: center;">
+        </div>
+
+        <div class="form-group" style="width: 80%; margin: 20px auto;">
+            <label style="font-size: 0.9rem; font-weight: bold; opacity: 0.7;">STRESS TOLERANCE (1-5)</label><br>
+            <input type="range" id="reg-stress" min="1" max="5" value="3" style="width: 100%;">
+        </div>
+        <div style="text-align: center;"><button class="menu-link" onclick="saveProfile()">SAVE PROFILE</button></div>
+    </div>
+
+    <div id="home-screen" class="screen">
+        <div class="header-home" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center;">
+                <img src="assets/logo.png" style="width: 40px; margin-right: 10px;">
+                <h3 id="home-username" style="letter-spacing: 3px; font-weight: 600; margin: 0; font-size: 1.1rem; text-transform: uppercase;">DANIELA</h3>
+            </div>
+            <button onclick="logoutUser()" style="background: transparent; border: 1px solid var(--color-grafito); border-radius: 10px; padding: 5px 10px; font-weight: bold; cursor: pointer; opacity: 0.8;">LOG OUT</button>
+        </div> 
+
+        <div class="section-title-home">RESULTS</div>
+        <div class="progress-bar-container"><div class="progress-fill"></div></div>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 35px;">Deep work: 32h | Sports: 8h | Social: 6h</p>
+
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--color-grafito); margin-bottom: 10px;">
+            <div class="section-title-home" style="border: none; margin: 0; padding: 0;">WEEKLY PLANNING</div>
+            <span style="font-size: 0.8rem; font-weight: bold; cursor: pointer; opacity: 0.6;" onclick="document.getElementById('days-modal').classList.add('active')">⚙️ Setup Days</span>
+        </div>
+        
+        <ul class="task-list" id="agenda-list">
+        </ul>
+    </div>
+
+    <div id="cycle-screen" class="screen">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="assets/cycle.png" style="width: 60px; opacity: 0.8; margin-bottom: 10px;">
+            <h2 class="section-title" style="margin-bottom: 5px; font-size: 1.5rem;">My Cycle</h2>
+            <div style="border: 1px solid rgba(74,74,74,0.3); padding: 5px 15px; border-radius: 20px; display: inline-block; font-size: 0.9rem; font-weight: bold; opacity: 0.8;"><span id="current-phase-display">Menstrual phase</span></div>
+        </div>
+
+        <div style="background: rgba(74,74,74,0.03); border: 1px solid rgba(74,74,74,0.1); border-radius: 15px; padding: 20px; text-align: left; margin-bottom: 30px;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; opacity: 0.8;">Daily Summary:</p>
+            <ul style="margin: 0; padding-left: 20px; opacity: 0.7; font-size: 0.9rem; line-height: 1.6;">
+                <li>Profile: <span id="summary-diagnosis" style="font-weight: bold;">Loading...</span></li>
+                <li>Current Phase: <span id="summary-phase" style="font-weight: bold;">Not set</span></li>
+                <li>Today's Mood: <span id="summary-mood" style="font-weight: bold;">Not registered</span></li>
+            </ul>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 40px;">
+            <p style="margin: 0 0 15px 0; font-weight: bold; opacity: 0.8; font-size: 1rem;">Emotional mood:</p>
+            <div style="display: flex; justify-content: space-around;">
+                <button class="mood-btn" onclick="logMood('angry', this)"><img src="assets/angry.png"></button>
+                <button class="mood-btn" onclick="logMood('sad', this)"><img src="assets/sad.png"></button>
+                <button class="mood-btn" onclick="logMood('serious', this)"><img src="assets/serious.png"></button>
+                <button class="mood-btn" onclick="logMood('happy', this)"><img src="assets/happy.png"></button>
+            </div>
+        </div>
+
+        <div style="text-align: center;"><span style="font-weight: bold; opacity: 0.6; cursor: pointer; text-decoration: underline;" onclick="document.getElementById('cycle-options-modal').classList.add('active')">MENU OPTIONS</span></div>
+    </div>
+
+    <div id="ai-screen" class="screen">
+         
+        <div style="text-align: center; margin-bottom: 20px;"><img src="assets/logo.png" style="width: 50px; opacity: 0.8;"></div>
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 class="section-title" style="margin-bottom: 5px; font-size: 1.3rem; letter-spacing: 1px;">B-IA ENGINE</h2>
+            <p style="font-size: 0.8rem; opacity: 0.5; font-style: italic;">"The first month is for tracking trends; predictions will be reliable starting from the second month of use."</p>
+        </div>
+        
+        <div style="margin-bottom: 30px; display: flex; justify-content: center; gap: 20px; font-size: 0.85rem; opacity: 0.6;">
+            <span>🧬 <b id="ia-profile-data">...</b></span><span>🌙 <b id="ia-phase-data">...</b></span>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button class="menu-link" style="font-size: 1rem; color: var(--color-grafito);" onclick="runANOVAPrediction()">GET STRATEGY FOR NEXT WEEK</button>
+        </div>
+        
+        <div id="anova-results" style="display: none; padding: 10px 5px;">
+            <p style="font-weight: bold; font-size: 1rem; border-bottom: 1px solid rgba(74,74,74,0.1); padding-bottom: 10px;">Advice for your next days:</p>
+            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.4;">ESTIMATED ENERGY</p>
+            <p id="ia-energy-prediction" style="font-size: 0.95rem; opacity: 0.8; margin-bottom: 20px;"></p>
+            
+            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.4;">SUGGESTED FOCUS</p>
+            <ul id="ia-focus-prediction" style="padding-left: 18px; font-size: 0.95rem; opacity: 0.8; margin-bottom: 30px;"></ul>
+            
+            <div style="text-align: center;">
+                <button class="menu-link" style="border: 1px dashed var(--color-grafito); padding: 10px; border-radius: 10px;" onclick="applySuggestedLayout()">
+    APPLY TO MY AGENDA ➔
+</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tasks-screen" class="screen">
+        <h2 class="section-title">TASK BANK</h2>
+        <p style="font-size: 0.8rem; opacity: 0.6;">Your saved activities</p>
+        <button class="add-task-btn" onclick="document.getElementById('create-modal').classList.add('active')" style="border-style: solid;">+ Create New Task Type</button>
+        <div id="database-list" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="bottom-nav">
+        <img src="assets/home.png" class="nav-icon" onclick="goToScreen('home-screen')">
+        <img src="assets/cycle.png" class="nav-icon" onclick="goToScreen('cycle-screen')">
+        <img src="assets/tasks.png" class="nav-icon" onclick="goToScreen('tasks-screen')">
+        <img src="assets/B-IA.png" class="nav-icon" onclick="goToScreen('ai-screen')">
+    </div>
+
+    <div id="days-modal" class="modal-overlay">
+        <div class="modal-content" style="background: var(--color-lienzo); padding: 20px; border-radius: 20px; width: 85%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(74,74,74,0.1); padding-bottom: 10px; margin-bottom: 20px;">
+                <h3 style="margin:0; font-size:1.1rem;">Select Work Days</h3>
+                <span onclick="closeModals()" style="font-size:1.2rem; cursor:pointer; opacity:0.5;">✖</span>
+            </div>
+            <div style="text-align: left; display: flex; flex-direction: column; gap: 10px;" id="days-checkboxes">
+                <label><input type="checkbox" value="SUNDAY" class="day-cb"> Sunday</label>
+                <label><input type="checkbox" value="MONDAY" class="day-cb"> Monday</label>
+                <label><input type="checkbox" value="TUESDAY" class="day-cb"> Tuesday</label>
+                <label><input type="checkbox" value="WEDNESDAY" class="day-cb"> Wednesday</label>
+                <label><input type="checkbox" value="THURSDAY" class="day-cb"> Thursday</label>
+                <label><input type="checkbox" value="FRIDAY" class="day-cb"> Friday</label>
+                <label><input type="checkbox" value="SATURDAY" class="day-cb"> Saturday</label>
+            </div>
+            <button class="menu-link" style="margin-top: 25px; font-weight: bold;" onclick="saveActiveDays()">SAVE DAYS</button>
+        </div>
+    </div>
+    
+    <div id="cycle-options-modal" class="modal-overlay">
+        <div class="modal-content" style="background: var(--color-lienzo); padding: 20px; border-radius: 20px; width: 85%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(74,74,74,0.1); padding-bottom: 10px; margin-bottom: 20px;">
+                <h3 style="margin:0; font-size:1.1rem;">Register of period</h3>
+                <span onclick="closeModals()" style="font-size:1.2rem; cursor:pointer; opacity:0.5;">✖</span>
+            </div>
+            
+            <div class="form-group" style="text-align: left;"><label style="font-size: 0.85rem; font-weight: bold; opacity: 0.7;">Start day</label><input type="date" id="period-start-date" style="width: 100%; margin-top: 5px;"></div>
+            <div class="form-group" style="text-align: left; margin-top: 15px;"><label style="font-size: 0.85rem; font-weight: bold; opacity: 0.7;">End day (Optional)</label><input type="date" id="period-end-date" style="width: 100%; margin-top: 5px;"></div>
+            <hr style="border: 0; border-top: 1px dashed rgba(74,74,74,0.3); margin: 20px 0;">
+            <div class="form-group" style="text-align: left;">
+                <label style="font-size: 0.85rem; font-weight: bold; opacity: 0.7;">Irregular? Override manually:</label>
+                <select id="manual-phase-select" style="width: 100%; font-size: 1rem; margin-top: 5px; padding: 5px; background: transparent; border: none; border-bottom: 2px solid var(--color-grafito);">
+                    <option value="">-- Let app calculate --</option>
+                    <option value="Menstrual phase">🩸 Menstrual phase</option>
+                    <option value="Follicular phase">🌱 Follicular phase</option>
+                    <option value="Ovulatory phase">✨ Ovulatory phase</option>
+                    <option value="Luteal phase">🍂 Luteal phase</option>
+                </select>
+            </div>
+            <button class="menu-link" style="margin-top: 25px; font-weight: bold;" onclick="saveCycleData()">SAVE & UPDATE</button>
+        </div>
+    </div>
+
+    <div id="energy-modal" class="modal-overlay">
+        <div class="modal-content">
+            <p style="font-weight: 700; margin-bottom: 30px; opacity: 0.8; letter-spacing: 1px;">CURRENT ENERGY LEVEL</p>
+            <div class="battery-options">
+                <div class="battery-btn" onclick="logEnergy(1)"><img src="assets/low_battery.png" alt="Low"><br><span style="font-size:0.8rem;">Low</span></div>
+                <div class="battery-btn" onclick="logEnergy(2)"><img src="assets/medium_battery.png" alt="Med"><br><span style="font-size:0.8rem;">Med</span></div>
+                <div class="battery-btn" onclick="logEnergy(3)"><img src="assets/full_battery.png" alt="High"><br><span style="font-size:0.8rem;">High</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="selector-modal" class="modal-overlay">
+        <div class="modal-content" style="background: var(--color-lienzo); padding: 20px; border-radius: 20px; width: 85%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(74,74,74,0.2); padding-bottom:10px;">
+                <h3 style="margin:0; font-size:1.1rem;">Select Task</h3>
+                <span onclick="closeModals()" style="font-size:1.2rem; cursor:pointer; opacity:0.5;">✖</span>
+            </div>
+            <div id="selector-list" class="modal-body-scroll"></div>
+        </div>
+    </div>
+
+    <div id="create-modal" class="modal-overlay">
+        <div class="modal-content" style="background: var(--color-lienzo); padding: 20px; border-radius: 20px; width: 85%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h3 style="margin:0; font-size:1.1rem;">New Task Type</h3>
+                <span onclick="closeModals()" style="font-size:1.2rem; cursor:pointer; opacity:0.5;">✖</span>
+            </div>
+            <input type="text" id="new-db-task-name" placeholder="Task Name (e.g. Write Paper)" style="width: 100%; font-size: 1.1rem; margin-bottom: 20px; text-align: left; padding-left: 5px;">
+            <div style="text-align: left; margin-bottom: 20px;">
+                <p style="font-weight: bold; font-size: 0.8rem; opacity: 0.7; margin-bottom: 10px;">CATEGORY</p>
+                <button class="menu-link cat-select-btn" onclick="selectNewTaskCategory(this, '🧠', 'Deep Work')" style="width: 100%; text-align: left;">🧠 Deep Work</button>
+                <button class="menu-link cat-select-btn" onclick="selectNewTaskCategory(this, '🏃🏽‍♀️', 'Sports & Movement')" style="width: 100%; text-align: left; opacity:0.5;">🏃🏽‍♀️ Sports & Movement</button>
+                <button class="menu-link cat-select-btn" onclick="selectNewTaskCategory(this, '🎨', 'Creative / Recreative')" style="width: 100%; text-align: left; opacity:0.5;">🎨 Creative / Recreative</button>
+                <button class="menu-link cat-select-btn" onclick="selectNewTaskCategory(this, '☕', 'Social / Rest')" style="width: 100%; text-align: left; opacity:0.5;">☕ Social / Rest</button>
+                <button class="menu-link cat-select-btn" onclick="selectNewTaskCategory(this, '⚙️', 'Admin / Routine')" style="width: 100%; text-align: left; opacity:0.5;">⚙️ Admin / Routine</button>
+            </div>
+            <button class="menu-link" style="font-weight: bold;" onclick="saveNewTask()">SAVE TO BANK</button>
+        </div>
+    </div>
+
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>

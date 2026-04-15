@@ -1,0 +1,455 @@
+/* =========================================
+   VARIABLES GLOBALES
+   (Definen la paleta de colores de toda la app. 
+   Usar variables permite cambiar el tema de oscuro a claro en 1 segundo)
+========================================= */
+:root {
+    --color-lienzo: #f3efe2; /* Color crema/papel de fondo del celular */
+    --color-grafito: #4A4A4A; /* Color gris oscuro para textos, bordes y botones */
+}
+
+/* =========================================
+   0. ESTILOS BASE DEL NAVEGADOR
+   (El entorno fuera del celular, o sea, tu monitor)
+========================================= */
+body {
+    background-color: #dcdcdc; /* Fondo gris para que contraste el marco del celular */
+    color: var(--color-grafito);
+    font-family: 'Nunito', sans-serif;
+    margin: 0;
+    
+    /* Flexbox aquí sirve para mantener el celular en el centro exacto de tu pantalla */
+    display: flex;
+    justify-content: center; /* Centra horizontalmente */
+    align-items: center;     /* Centra verticalmente */
+    height: 100vh;           /* Ocupa el 100% de la altura de la ventana */
+    overflow: hidden;        /* Evita que aparezcan barras de scroll externas en tu monitor */
+}
+
+/* =========================================
+   1. CONTENEDOR DEL CELULAR (El "Hardware")
+   (El marco físico negro que sostiene todo el ecosistema)
+========================================= */
+.app-container {
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--color-lienzo);
+    position: relative;
+    border: none;
+    border-radius: 0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-lienzo);
+}
+
+/* =========================================
+   2. PANTALLAS BASE (El "Software")
+   (Reglas generales para todas las slides de la app)
+========================================= */
+.screen {
+    display: none;           /* Oculta TODAS las pantallas por defecto */
+    
+    /* position: absolute despega la pantalla y la empalma exactamente encima de las demás */
+    position: absolute;      
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* padding: Da aire al contenido. El "90px" de abajo es vital para que el texto 
+       no se quede escondido detrás de la barra de navegación al hacer scroll al final */
+    padding: 30px 20px 90px 20px; 
+    
+    /* box-sizing obliga a que el padding empuje hacia adentro. 
+       Si no lo pones, el celular engordaría y se saldría del marco negro */
+    box-sizing: border-box;  
+    
+    overflow-y: auto;        /* Habilita el scroll vertical (arriba-abajo) si hay mucho contenido */
+    overflow-x: hidden;      /* Prohíbe terminantemente el scroll horizontal (izquierda-derecha) */
+    background-color: var(--color-lienzo);
+}
+
+/* Cuando la función de JavaScript enciende una pantalla: */
+.screen.active { 
+    display: block; /* El comportamiento en bloque clásico permite que el scroll funcione natural */
+}
+
+/* =========================================
+   3. WELCOME SCREEN (Excepción de Diseño)
+   (Requiere un centrado especial perfecto que las demás no necesitan)
+========================================= */
+#welcome-screen.active {
+    display: flex;           /* Reactivamos Flexbox SOLO para esta pantalla */
+    flex-direction: column;  /* Apila logo y botones de arriba hacia abajo */
+    justify-content: center; /* Centra todo perfectamente en el eje vertical */
+    align-items: center;     /* Centra todo perfectamente en el eje horizontal */
+    padding-top: 0;          /* Le quitamos el aire de arriba para que quede simétrico */
+}
+
+.hero-logo-container {
+    display: flex; 
+    justify-content: center; 
+    width: 100%;
+    margin-bottom: -50px;    /* Truco: Margen negativo para acercar el logo al título "Welcome" */
+    z-index: 10;             /* Asegura que el logo flote por encima del fondo */
+}
+
+.logo-main {
+    width: 95%; 
+    max-width: 380px; 
+    height: auto;
+    filter: contrast(1.1);   /* Realza un poco las líneas oscuras del diseño a lápiz */
+}
+
+.welcome-title {
+    font-size: 1.2rem; 
+    font-weight: 400; 
+    letter-spacing: 4px;     /* Separa las letras para un estilo limpio y profesional */
+    margin-top: 0; 
+    margin-bottom: 30px; 
+    color: var(--color-grafito);
+    z-index: 20;
+}
+
+.links-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px;               /* Espacio hueco entre el botón de Log in y Register */
+    align-items: center; 
+    width: 100%; 
+}
+
+/* =========================================
+   4. BARRA DE NAVEGACIÓN INFERIOR (Global)
+   (La botonera que siempre vive pegada abajo)
+========================================= */
+.bottom-nav {
+    position: absolute;      /* Se ancla usando el celular (app-container) como referencia */
+    bottom: 0;               /* Clavada al fondo (pixel 0) */
+    left: 0;
+    width: 100%; 
+    display: flex;           /* Alinea los 4 íconos en fila horizontal */
+    justify-content: space-evenly; /* Reparte el espacio entre íconos simétricamente */
+    align-items: center; 
+    padding: 15px 0 20px 0; 
+    
+    background-color: rgba(243, 239, 226, 0.95); /* Color lienzo, pero al 95% de opacidad */
+    backdrop-filter: blur(5px);                  /* Efecto iOS: Desenfoca lo que pasa por detrás al hacer scroll */
+    border-top: 1px solid rgba(74, 74, 74, 0.1); /* Línea sutil para separarla de la pantalla */
+    z-index: 1000;           /* Nivel de capa máximo. NADA se le puede poner encima */
+}
+
+.bottom-nav {
+    /* ... deja todo lo que ya tienes, y agrega/modifica esto: ... */
+    padding-bottom: 25px; /* Esto empuja los íconos hacia arriba */
+    height: 80px;         /* Ajusta el alto para que quepa el nuevo espacio */
+}
+
+/* 3. Anclamos la barra abajo para siempre */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+.nav-icon { 
+    width: 24px; 
+    height: auto; 
+    opacity: 0.4;            /* Íconos inactivos tenues */
+    cursor: pointer; 
+    transition: all 0.2s;    /* Suaviza la animación al pasar el mouse/dedo */
+}
+
+.nav-icon:hover, .nav-icon.active-icon { 
+    opacity: 1;              /* Ícono activo sólido */
+    transform: translateY(-2px); /* Da un saltito hacia arriba al activarse */
+}
+
+/* =========================================
+   5. TIPOGRAFÍA, ENLACES Y BOTONES GLOBALES
+========================================= */
+.section-title { 
+    font-size: 1.8rem; 
+    margin: 20px 0 30px 0; 
+    font-weight: 700; 
+    text-align: center; 
+}
+
+.menu-link { 
+    background: transparent; 
+    border: none; 
+    text-decoration: none; /* ✨ ADIÓS SUBRAYADO */
+    color: var(--color-grafito); 
+    font-family: 'Nunito', sans-serif; 
+    font-size: 1.2rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.3s ease; /* ✨ Hace que el crecimiento sea suave y fluido */
+}
+
+.menu-link:hover { 
+    opacity: 0.7;          /* Cambio de tonalidad (se vuelve un poco más claro) */
+    transform: scale(1.1); /* ✨ EFECTO DE CRECIMIENTO (Se hace 10% más grande) */
+}
+.back-btn { 
+    position: absolute; 
+    top: 20px; 
+    left: 20px; 
+    font-size: 1rem; 
+    background: none; 
+    border: none; 
+    color: var(--color-grafito); 
+    font-weight: 600; 
+    cursor: pointer; 
+}
+
+/* =========================================
+   6. FORMULARIOS E INPUTS
+========================================= */
+.form-group { 
+    width: 100%; 
+    margin-bottom: 20px; 
+    text-align: center; 
+}
+
+/* Diseño de inputs de texto/número "invisibles" (Solo línea inferior) */
+input[type="text"], input[type="email"], input[type="number"], input[type="date"] { 
+    width: 80%; 
+    border: none; 
+    border-bottom: 2px solid var(--color-grafito); 
+    background: transparent; 
+    font-family: 'Nunito', sans-serif; 
+    font-size: 1.1rem; 
+    color: var(--color-grafito); 
+    text-align: center; 
+    outline: none; 
+    padding: 8px 0;
+}
+
+input[type="range"] { 
+    accent-color: var(--color-grafito); 
+    width: 100%; 
+}
+
+/* Botones selectores estilo texto (Ej. YES / NO en regularidad) */
+.text-toggle { 
+    font-size: 1.2rem; 
+    font-weight: 700; 
+    opacity: 0.4;          /* Tono apagado por defecto */
+    cursor: pointer; 
+    border: none;          /* ✨ Adiós a la línea inferior */
+    transition: all 0.3s ease;
+}
+
+.text-toggle.active { 
+    opacity: 1;            /* Tono sólido al activarse */
+    transform: scale(1.2); /* ✨ Crece un 20% al seleccionarse */
+    color: #111;           /* Se vuelve un gris casi negro para resaltar del resto */
+}
+
+/* =========================================
+   7. DASHBOARD DEL HOGAR (AGENDA Y BARRA DE PROGRESO)
+========================================= */
+.header-home { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
+}
+
+.section-title-home { 
+    font-size: 1.1rem; 
+    font-weight: 600; 
+    border-bottom: 1px solid var(--color-grafito); 
+    padding-bottom: 5px; 
+    margin-top: 10px; 
+    letter-spacing: 1px;
+}
+
+/* Barra de progreso de energía (Estilo termómetro) */
+.progress-bar-container { 
+    width: 100%; 
+    border: 1.5px solid var(--color-grafito); 
+    border-radius: 15px; 
+    height: 12px; 
+    margin: 5px 0; 
+    overflow: hidden; 
+}
+.progress-fill { background-color: var(--color-grafito); height: 100%; width: 84%; }
+
+/* =========================================
+   8. SISTEMA ACORDEÓN DE TAREAS (Días de la semana)
+========================================= */
+.task-list { list-style: none; padding: 0; width: 100%; margin-top: 15px;}
+.task-item { padding: 10px 0 15px 0; display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
+
+/* Día Inactivo (Ej. "TUESDAY" colapsado) */
+.task-day { 
+    font-weight: 600; 
+    font-size: 0.95rem; 
+    opacity: 0.4; 
+    text-transform: uppercase; 
+    cursor: pointer; 
+    padding: 10px 0; 
+    letter-spacing: 1.5px;
+    transition: all 0.3s ease;
+}
+
+/* Día Activo (Ej. "MONDAY" expandido) */
+.task-day.active { 
+    opacity: 1; 
+    font-weight: 800; 
+    color: var(--color-grafito); 
+    margin-bottom: 10px; 
+}
+
+/* Caja que esconde o muestra las tareas (Animación suave) */
+.daily-tasks-container { 
+    max-height: 0; 
+    overflow: hidden; 
+    transition: max-height 0.4s ease-out; 
+    width: 100%; 
+}
+.daily-tasks-container.expanded { max-height: 500px; }
+
+/* Elementos individuales de la tarea (Hora, Icono, Play) */
+.task-details { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    width: 100%; 
+    border-bottom: 1px dashed rgba(74, 74, 74, 0.4); 
+    padding-bottom: 8px; 
+    margin-bottom: 8px; 
+}
+.task-icon { width: 18px; opacity: 0.8; }
+.timer-container-right { display: flex; align-items: center; justify-content: flex-end; width: 100%; gap: 10px; }
+
+.timer-play-btn { 
+    background: var(--color-grafito); 
+    color: var(--color-lienzo); 
+    border: none; 
+    border-radius: 50%; 
+    width: 30px; 
+    height: 30px; 
+    cursor: pointer; 
+    display: flex; justify-content: center; align-items: center;
+}
+.delete-task-btn { background: transparent; border: none; opacity: 0.3; cursor: pointer; }
+.add-task-btn { 
+    background: transparent; border: 1px dashed rgba(74,74,74,0.4); 
+    opacity: 0.7; width: 100%; padding: 10px; border-radius: 10px; 
+    cursor: pointer; font-weight: 600; margin-top: 5px; 
+}
+
+/* =========================================
+   9. MODALS (Pantallas flotantes / Pop-ups)
+   (Ej. Batería de energía, Opciones de Ciclo)
+========================================= */
+.modal-overlay { 
+    display: none; 
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    background: rgba(243, 239, 226, 0.85); 
+    backdrop-filter: blur(3px); 
+    z-index: 100; /* Cubre toda la app excepto la bottom-nav */
+    justify-content: center; 
+    align-items: center; 
+    border-radius: 30px; 
+}
+.modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-content { background: transparent; text-align: center; width: 90%; }
+.battery-options { display: flex; justify-content: space-evenly; align-items: flex-end; }
+.battery-btn { opacity: 0.5; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s ease;}
+.battery-btn img { width: 40px; }
+.battery-btn:hover { opacity: 1; transform: scale(1.1); }
+
+/* =========================================
+   10. MOOD TRACKER (Botones de Caritas del Ciclo)
+========================================= */
+.mood-btn { 
+    background: transparent; border: none; 
+    width: 60px; height: 60px; padding: 0; 
+    cursor: pointer; 
+    filter: grayscale(100%); /* Las hace grises por defecto */
+    opacity: 0.5; 
+    transition: all 0.2s;
+}
+.mood-btn img { width: 100%; object-fit: contain;}
+
+/* Al seleccionar un estado de ánimo: recupera color y crece */
+.mood-btn.active { filter: grayscale(0%); opacity: 1; transform: scale(1.15); }
+
+/* =========================================
+   11. LIBRERÍA DE TAREAS (TASK BANK)
+========================================= */
+.library-item {
+    display: flex;             /* Alinea los elementos en una fila horizontal */
+    align-items: center;       /* Centra el icono, el texto y la tacha verticalmente */
+    gap: 15px;                 /* Espacio de respiración entre el icono y el texto */
+    padding: 15px 5px;
+    border-bottom: 1px solid rgba(74, 74, 74, 0.1); /* Línea sutil divisoria */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.library-icon {
+    font-size: 1.5rem;         /* Hace el emoji un poco más grande */
+}
+
+.library-details {
+    display: flex;
+    flex-direction: column;    /* Apila el nombre de la tarea sobre su categoría */
+    text-align: left;
+    flex-grow: 1;              /* ✨ TRUCO: Toma todo el espacio vacío del medio para empujar la tacha al extremo derecho */
+}
+
+.library-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--color-grafito);
+}
+
+/* =========================================
+   SCROLL FIX: Contenedores Dinámicos
+========================================= */
+
+/* 1. Permite que toda la pantalla del Home se pueda scrollear */
+/* Permite hacer scroll en TODAS las pantallas y evita que choquen con el menú */
+#home-screen, 
+#task-bank-screen, 
+#cycle-screen, 
+#ia-screen {
+    min-height: 100vh;
+    height: auto; 
+    padding-bottom: 130px; 
+}
+
+/* 2. (Opcional pero recomendado) Limita el alto de cada día individual */
+.daily-tasks-container {
+    max-height: 450px;     /* Si tienes 20 tareas en un día, no hace la pantalla infinita */
+    overflow-y: auto;      /* Crea un scroll interno solo para las tareas de ese día */
+    overflow-x: hidden;
+    padding-bottom: 10px;
+}
+
+/* Estiliza la barrita de scroll para que se vea fina y moderna (estilo iOS/Android) */
+.daily-tasks-container::-webkit-scrollbar {
+    width: 4px;
+}
+.daily-tasks-container::-webkit-scrollbar-thumb {
+    background-color: rgba(74, 74, 74, 0.3);
+    border-radius: 10px;
+}
