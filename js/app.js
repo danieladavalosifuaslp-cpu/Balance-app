@@ -525,6 +525,7 @@ function toggleTimer(btn) {
         lastStoppedTask.name = taskItem.querySelector('.task-name').innerText;
         lastStoppedTask.duration = totalSeconds;
         
+        // Lanzamos el modal de energía
         document.getElementById('energy-modal').classList.add('active');
     } else {
         // --- ESTADO: PLAY ---
@@ -554,43 +555,6 @@ function toggleTimer(btn) {
     
     // ✨ Toma foto de la pantalla para guardar si el botón se quedó en Play o Pause
     saveAgendaState(); 
-}
-        // Lanzamos el modal de energía
-        document.getElementById('energy-modal').classList.add('active');
-    } else {
-        // --- ESTADO: PLAY ---
-        btn.innerText = "⏸";
-        btn.style.backgroundColor = "var(--color-lienzo)";
-        btn.style.color = "var(--color-grafito)";
-        btn.style.border = "2px solid var(--color-grafito)";
-
-        // Si es nuevo, lo inicializamos con 0 tiempo acumulado
-        if (!activeTimers[timerId]) {
-            activeTimers[timerId] = { accumulated: 0, isRunning: true };
-        } else {
-            activeTimers[timerId].isRunning = true;
-        }
-
-        // Anotamos la hora exacta (milisegundos) en la que le dimos Play
-        activeTimers[timerId].startTime = Date.now();
-
-        // Refresco visual (se actualiza cada segundo para que tú veas el cambio)
-        activeTimers[timerId].interval = setInterval(() => {
-            const now = Date.now();
-            // Tiempo real = lo que ya llevábamos guardado + lo que ha pasado desde el último Play
-            const totalMs = activeTimers[timerId].accumulated + (now - activeTimers[timerId].startTime);
-            const totalSecs = Math.floor(totalMs / 1000);
-            
-            const hrs = Math.floor(totalSecs / 3600);
-            const mins = Math.floor((totalSecs % 3600) / 60);
-            const secs = totalSecs % 60;
-            
-            timerDisplay.innerText = 
-                String(hrs).padStart(2, '0') + ':' + 
-                String(mins).padStart(2, '0') + ':' + 
-                String(secs).padStart(2, '0');
-        }, 1000);
-    }
 }
 
 // 7.3 Función: Registro Final en Base de Datos (Log)
