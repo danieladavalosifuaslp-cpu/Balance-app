@@ -488,12 +488,23 @@ function deleteTask(btn) {
 let activeTimers = {}; 
 let lastStoppedTask = { name: "", duration: 0 }; 
 
-// 7.2 Función: Control del tiempo (Play/Pause) con Reloj Absoluto
+// 7.2 Función: Control del tiempo (Play/Pause) con Reloj Absoluto y Respaldo
 function toggleTimer(btn) {
     const timerDisplay = btn.previousElementSibling; 
     
     if (!btn.dataset.timerId) btn.dataset.timerId = 'timer_' + Math.random().toString(36).substr(2, 9);
     const timerId = btn.dataset.timerId;
+
+    // ✨ EL PARCHE: Si Android vació la memoria RAM, recuperamos el tiempo leyendo la pantalla
+    if (!activeTimers[timerId]) {
+        const parts = timerDisplay.innerText.split(':').map(Number);
+        const screenSeconds = (parts[0] * 3600) + (parts[1] * 60) + (parts[2] || 0);
+        activeTimers[timerId] = {
+            accumulated: screenSeconds * 1000, // Recupera el tiempo en milisegundos
+            isRunning: false,
+            startTime: Date.now()
+        };
+    }
 
     if (btn.innerText === "⏸") {
         // --- ESTADO: PAUSA ---
@@ -502,20 +513,48 @@ function toggleTimer(btn) {
         btn.style.color = "var(--color-lienzo)";
         btn.style.border = "none";
         
-        // Detenemos el refresco de la pantalla
-        clearInterval(activeTimers[timerId].interval);
+        // Detenemos el refresco de forma segura
+        if (activeTimers[timerId].interval) clearInterval(activeTimers[timerId].interval);
         activeTimers[timerId].isRunning = false;
 
-        // Calculamos y guardamos el tiempo total acumulado hasta este milisegundo
         const now = Date.now();
         activeTimers[timerId].accumulated += (now - activeTimers[timerId].startTime);
 
-        // CAPTURA DE DATOS: Pasamos los milisegundos a segundos para el historial
         const totalSeconds = Math.floor(activeTimers[timerId].accumulated / 1000);
         const taskItem = btn.closest('.sub-task-item');
         lastStoppedTask.name = taskItem.querySelector('.task-name').innerText;
         lastStoppedTask.duration = totalSeconds;
         
+        document.getElementById('energy-modal').classList.add('active');
+    } else {
+        // --- ESTADO: PLAY ---
+        btn.innerText = "⏸";
+        btn.style.backgroundColor = "var(--color-lienzo)";
+        btn.style.color = "var(--color-grafito)";
+        btn.style.border = "2px solid var(--color-grafito)";
+
+        activeTimers[timerId].isRunning = true;
+        activeTimers[timerId].startTime = Date.now();
+
+        activeTimers[timerId].interval = setInterval(() => {
+            const now = Date.now();
+            const totalMs = activeTimers[timerId].accumulated + (now - activeTimers[timerId].startTime);
+            const totalSecs = Math.floor(totalMs / 1000);
+            
+            const hrs = Math.floor(totalSecs / 3600);
+            const mins = Math.floor((totalSecs % 3600) / 60);
+            const secs = totalSecs % 60;
+            
+            timerDisplay.innerText = 
+                String(hrs).padStart(2, '0') + ':' + 
+                String(mins).padStart(2, '0') + ':' + 
+                String(secs).padStart(2, '0');
+        }, 1000);
+    }
+    
+    // ✨ Toma foto de la pantalla para guardar si el botón se quedó en Play o Pause
+    saveAgendaState(); 
+}
         // Lanzamos el modal de energía
         document.getElementById('energy-modal').classList.add('active');
     } else {
