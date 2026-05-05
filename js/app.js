@@ -461,11 +461,18 @@ function openTaskSelector(btn) {
 function addTaskToDay(icon, name) {
     if (!targetDayContainer) return; 
     const newTaskHTML = `
-        <div class="sub-task-item">
-            <div class="task-details"><span class="task-icon">${icon}</span><span class="task-time" contenteditable="true">00:00</span><span class="task-name" contenteditable="true">${name}</span></div>
-            <div class="timer-container-right"><span class="timer-display">00:00:00</span><button class="timer-play-btn" onclick="toggleTimer(this)">▶</button><button class="delete-task-btn" onclick="deleteTask(this)">✖</button></div>
+    <div class="sub-task-item">
+        <div class="task-details">
+            <span class="task-icon">${icon}</span>
+            <span class="task-time" contenteditable="true">00:00</span>
+            <span class="task-name" contenteditable="true">${name}</span>
         </div>
-    `;
+        <div class="timer-container-right">
+            <button class="timer-play-btn" onclick="completeTask(this)">✔</button>
+            <button class="delete-task-btn" onclick="deleteTask(this)">✖</button>
+        </div>
+    </div>
+`;
     const addBtn = targetDayContainer.querySelector('.add-task-btn');
     addBtn.insertAdjacentHTML('beforebegin', newTaskHTML);
     closeModals(); 
@@ -479,82 +486,50 @@ function deleteTask(btn) {
 }
 
 /* =========================================
-   7. MOTOR DE CRONÓMETRO Y RECOLECCIÓN DE DATOS (EL SENSOR)
-   Este bloque mide el tiempo real y activa la captura de energía.
-   Es el puente entre la actividad física/mental y el historial.
+   7. REGISTRO DIRECTO DE ACTIVIDAD (SIN CRONÓMETRO)
 ========================================= */
 
 // 7.1 Memoria RAM temporal
-let activeTimers = {}; 
 let lastStoppedTask = { name: "", duration: 0 }; 
 
-// 7.2 Función: Control del tiempo (Play/Pause) con Reloj Absoluto y Respaldo
-function toggleTimer(btn) {
-    const timerDisplay = btn.previousElementSibling; 
-    
-    if (!btn.dataset.timerId) btn.dataset.timerId = 'timer_' + Math.random().toString(36).substr(2, 9);
-    const timerId = btn.dataset.timerId;
+// 7.2 Función: Cálculo de tiempo leyendo la pantalla (Reemplaza al cronómetro)
+function completeTask(btn) {
+    const taskItem = btn.closest('.sub-task-item');
+    const taskName = taskItem.querySelector('.task-name').innerText;
+    const taskTimeStr = taskItem.querySelector('.task-time').innerText;
 
-    // ✨ EL PARCHE: Si Android vació la memoria RAM, recuperamos el tiempo leyendo la pantalla
-    if (!activeTimers[timerId]) {
-        const parts = timerDisplay.innerText.split(':').map(Number);
-        const screenSeconds = (parts[0] * 3600) + (parts[1] * 60) + (parts[2] || 0);
-        activeTimers[timerId] = {
-            accumulated: screenSeconds * 1000, // Recupera el tiempo en milisegundos
-            isRunning: false,
-            startTime: Date.now()
-        };
+    // Calculamos la duración leyendo la siguiente actividad
+    let durationInSeconds = 3600; // Por defecto le da 1 hora si es la última tarea del día
+    
+    const nextItem = taskItem.nextElementSibling;
+    if (nextItem && nextItem.classList.contains('sub-task-item')) {
+        const nextTimeStr = nextItem.querySelector('.task-time').innerText;
+        
+        // Convertimos las horas de texto (Ej. "10:30") a números para poder restarlas
+        const [h1, m1] = taskTimeStr.split(':').map(Number);
+        const [h2, m2] = nextTimeStr.split(':').map(Number);
+        
+        const diffMins = (h2 * 60 + m2) - (h1 * 60 + m1);
+        if (diffMins > 0) {
+            durationInSeconds = diffMins * 60;
+        }
     }
 
-    if (btn.innerText === "⏸") {
-        // --- ESTADO: PAUSA ---
-        btn.innerText = "▶";
-        btn.style.backgroundColor = "var(--color-grafito)";
-        btn.style.color = "var(--color-lienzo)";
-        btn.style.border = "none";
-        
-        // Detenemos el refresco de forma segura
-        if (activeTimers[timerId].interval) clearInterval(activeTimers[timerId].interval);
-        activeTimers[timerId].isRunning = false;
+    // Guardamos los datos para el historial
+    lastStoppedTask.name = taskName;
+    lastStoppedTask.duration = durationInSeconds;
 
-        const now = Date.now();
-        activeTimers[timerId].accumulated += (now - activeTimers[timerId].startTime);
+    // Efecto visual para tachar la tarea terminada
+    taskItem.style.opacity = "0.4";
+    btn.style.backgroundColor = "var(--color-grafito)";
+    btn.style.color = "var(--color-lienzo)";
+    btn.innerText = "✔"; // Cambiamos el icono por si venía de una sugerencia de la IA
+    btn.disabled = true; // Desactiva el botón para que no lo presiones dos veces
 
-        const totalSeconds = Math.floor(activeTimers[timerId].accumulated / 1000);
-        const taskItem = btn.closest('.sub-task-item');
-        lastStoppedTask.name = taskItem.querySelector('.task-name').innerText;
-        lastStoppedTask.duration = totalSeconds;
-        
-        // Lanzamos el modal de energía
-        document.getElementById('energy-modal').classList.add('active');
-    } else {
-        // --- ESTADO: PLAY ---
-        btn.innerText = "⏸";
-        btn.style.backgroundColor = "var(--color-lienzo)";
-        btn.style.color = "var(--color-grafito)";
-        btn.style.border = "2px solid var(--color-grafito)";
-
-        activeTimers[timerId].isRunning = true;
-        activeTimers[timerId].startTime = Date.now();
-
-        activeTimers[timerId].interval = setInterval(() => {
-            const now = Date.now();
-            const totalMs = activeTimers[timerId].accumulated + (now - activeTimers[timerId].startTime);
-            const totalSecs = Math.floor(totalMs / 1000);
-            
-            const hrs = Math.floor(totalSecs / 3600);
-            const mins = Math.floor((totalSecs % 3600) / 60);
-            const secs = totalSecs % 60;
-            
-            timerDisplay.innerText = 
-                String(hrs).padStart(2, '0') + ':' + 
-                String(mins).padStart(2, '0') + ':' + 
-                String(secs).padStart(2, '0');
-        }, 1000);
-    }
+    // Lanzamos la pregunta de energía
+    document.getElementById('energy-modal').classList.add('active');
     
-    // ✨ Toma foto de la pantalla para guardar si el botón se quedó en Play o Pause
-    saveAgendaState(); 
+    saveAgendaState(); // Guarda la foto con la tarea tachada
 }
 
 // 7.3 Función: Registro Final en Base de Datos (Log)
@@ -562,7 +537,7 @@ function toggleTimer(btn) {
 function logEnergy(level) {
     const currentPhase = localStorage.getItem('balance_current_phase') || 'Unknown';
     
-    // ✨ EL DATO MAESTRO: Aquí se une todo para el ANOVA
+    // EL DATO MAESTRO: Aquí se une todo para el ANOVA
     const newLog = {
         taskName: lastStoppedTask.name,
         durationSeconds: lastStoppedTask.duration,
@@ -598,7 +573,7 @@ function applySuggestedLayout() {
     const container = targetDay.querySelector('.daily-tasks-container');
     const addBtn = container.querySelector('.add-task-btn');
 
-    currentAISuggestion.forEach(task => {
+  currentAISuggestion.forEach(task => {
         const newTaskHTML = `
             <div class="sub-task-item">
                 <div class="task-details">
@@ -607,8 +582,7 @@ function applySuggestedLayout() {
                     <span class="task-name" contenteditable="true">${task.name}</span>
                 </div>
                 <div class="timer-container-right">
-                    <span class="timer-display">00:00:00</span>
-                    <button class="timer-play-btn" onclick="toggleTimer(this)">▶</button>
+                    <button class="timer-play-btn" onclick="completeTask(this)">✔</button>
                     <button class="delete-task-btn" onclick="deleteTask(this)">✖</button>
                 </div>
             </div>
