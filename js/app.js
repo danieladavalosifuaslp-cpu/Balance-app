@@ -269,13 +269,12 @@ function runANOVAPrediction() {
         }
     }
 
-   // --- ✨ PARTE D: DISTRIBUCIÓN DE TIEMPO Y AGENDA INTELIGENTE ---
+   // --- ✨ PARTE D: REAL-TIME AGENDA SCANNING & SMART SUGGESTIONS ---
     const myBaseline = getPersonalBaseline(historyDB);
     let deepHrs = parseFloat(myBaseline.deep);
     let adminHrs = parseFloat(myBaseline.admin);
     let socialHrs = parseFloat(myBaseline.social);
 
-    // Ajustamos la distribución matemáticamente según tu energía
     if (menuType === "HIGH_ENERGY") {
         deepHrs += (adminHrs * 0.2); 
         adminHrs -= (adminHrs * 0.2);
@@ -285,81 +284,67 @@ function runANOVAPrediction() {
         adminHrs += reduction;
     }
 
-    // 1. Identificamos qué día de la semana es hoy
+    // 1. Escaneamos la pantalla para leer tu agenda de HOY
     const daysArr = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     const todayName = daysArr[new Date().getDay()];
 
-    // 2. Definimos tus rutinas base
-    // type: "fixed" significa que la IA no lo toca. type: "flex" es donde la IA decide.
-    const baseRoutines = {
-        'MONDAY': [
-            { time: "08:00", name: "Organización semanal", icon: "⚙️", type: "fixed" },
-            { time: "09:30", name: "Trabajo Profundo", icon: "🧠", type: "fixed" },
-            { time: "14:00", name: "Comida", icon: "☕", type: "fixed" },
-            { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
-            { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
-        ],
-        'TUESDAY': [
-            { time: "08:00", name: "Revisión de correos", icon: "⚙️", type: "fixed" },
-            { time: "09:00", name: "Trabajo Profundo (Bloque 1)", icon: "🧠", type: "fixed" },
-            { time: "13:00", name: "Trabajo Profundo (Bloque 2)", icon: "🧠", type: "fixed" },
-            { time: "15:00", name: "Comida", icon: "☕", type: "fixed" },
-            { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
-            { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" },
-            { time: "21:30", name: "Cena y Cierre de día", icon: "☕", type: "fixed" }
-        ],
-        'WEDNESDAY': [
-             { time: "09:00", name: "Agrega tu rutina aquí", icon: "⚙️", type: "fixed" },
-             { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
-             { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
-        ],
-        'THURSDAY': [
-             { time: "09:00", name: "Agrega tu rutina aquí", icon: "⚙️", type: "fixed" },
-             { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
-             { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
-        ],
-        'FRIDAY': [
-             { time: "09:00", name: "Cierre de semana", icon: "⚙️", type: "fixed" },
-             { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
-             { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
-        ],
-        'DEFAULT': [
-            { time: "08:30", name: "Inicio de día", icon: "⚙️", type: "fixed" },
-            { time: "10:00", name: "Bloque de Trabajo", icon: "🧠", type: "fixed" },
-            { time: "14:00", name: "Comida", icon: "☕", type: "fixed" },
-            { time: "18:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
-            { time: "20:00", name: "FLEX_EVENING", icon: "", type: "flex" }
-        ]
-    };
-
-    let todayRoutine = baseRoutines[todayName] || baseRoutines['DEFAULT'];
-
-    // 3. La IA inyecta las actividades flexibles según tu energía
-    currentAISuggestion = todayRoutine.map(task => {
-        if (task.type === "fixed") return task; 
-        
-        if (task.name === "FLEX_WORKOUT") {
-            if (menuType === "HIGH_ENERGY") return { time: task.time, name: "Deporte de Alta Intensidad (Fuerza/Cardio)", icon: "🏃🏽‍♀️" };
-            if (menuType === "LOW_ENERGY") return { time: task.time, name: "Estiramiento / Yoga suave", icon: "🧘🏽‍♀️" };
-            return { time: task.time, name: "Ejercicio Moderado", icon: "🏃🏽‍♀️" };
-        }
-        
-        if (task.name === "FLEX_EVENING") {
-            if (menuType === "HIGH_ENERGY") return { time: task.time, name: "Proyecto personal o Vida Social", icon: "🎨" };
-            if (menuType === "LOW_ENERGY") return { time: task.time, name: "Lectura ligera / Cero pantallas", icon: "☕" };
-            return { time: task.time, name: "Admin ligero en casa", icon: "⚙️" };
-        }
+    const allDays = document.querySelectorAll('.task-day');
+    let targetDay = null;
+    allDays.forEach(div => {
+        if (div.innerText === todayName) targetDay = div.parentElement;
     });
 
-    // 4. Renderizamos el texto visual limpio
+    if (!targetDay) {
+        alert("Please set up your tasks for " + todayName + " first so the AI can analyze them.");
+        return;
+    }
+
+    // 2. Extraemos las actividades directamente del HTML visual
+    const taskElements = targetDay.querySelectorAll('.sub-task-item');
+    let todayRoutine = [];
+    
+    taskElements.forEach(item => {
+        const time = item.querySelector('.task-time').innerText;
+        const name = item.querySelector('.task-name').innerText;
+        const icon = item.querySelector('.task-icon').innerText;
+        const typeBtn = item.querySelector('.task-type-btn');
+        const type = typeBtn ? typeBtn.innerText : 'FIXED';
+        todayRoutine.push({ time, name, icon, type });
+    });
+
+    if (todayRoutine.length === 0) {
+        alert("Your agenda for today is empty. Add some tasks first!");
+        return;
+    }
+
+    // 3. La IA modifica ÚNICAMENTE los bloques que marcaste como FLEX
+    currentAISuggestion = todayRoutine.map(task => {
+        if (task.type === "FIXED") return task; // Si es fijo, no lo toca
+        
+        const nameLower = task.name.toLowerCase();
+        
+        // Regla: Si el bloque FLEX suena a ejercicio
+        if (nameLower.includes("workout") || nameLower.includes("gym") || nameLower.includes("exercise") || nameLower.includes("sport") || nameLower.includes("run")) {
+            if (menuType === "HIGH_ENERGY") return { time: task.time, name: "High Intensity (Lift/HIIT)", icon: "🏋🏽‍♀️" };
+            if (menuType === "LOW_ENERGY") return { time: task.time, name: "Recovery (Stretch/Yoga)", icon: "🧘🏽‍♀️" };
+            return { time: task.time, name: "Moderate Exercise", icon: "🚶🏽‍♀️" };
+        }
+        
+        // Regla: Si es un bloque FLEX de vida personal / noche
+        if (menuType === "HIGH_ENERGY") return { time: task.time, name: "Social / Creative Project", icon: "🎨" };
+        if (menuType === "LOW_ENERGY") return { time: task.time, name: "Screen-Free Rest", icon: "☕" };
+        return { time: task.time, name: "Light Admin / Prep", icon: "⚙️" };
+    });
+
+    // 4. Renderizamos el texto visual final en inglés limpio
     const suggestedScheduleHTML = `
         <div style="background: rgba(74,74,74,0.03); border: 1px dashed rgba(74,74,74,0.3); border-radius: 12px; padding: 15px; margin-top: 25px; text-align: left;">
-            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 5px 0; letter-spacing: 1px;">📊 DISTRIBUCIÓN DE TIEMPO</p>
+            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 5px 0; letter-spacing: 1px;">📊 TIME DISTRIBUTION</p>
             <p style="font-size: 0.75rem; color: var(--color-grafito); margin-bottom: 15px;">
-                <b>Concentración:</b> ${deepHrs.toFixed(1)}h | <b>Mecánico:</b> ${adminHrs.toFixed(1)}h | <b>Descanso:</b> ${socialHrs.toFixed(1)}h
+                <b>Deep Work:</b> ${deepHrs.toFixed(1)}h | <b>Admin:</b> ${adminHrs.toFixed(1)}h | <b>Rest:</b> ${socialHrs.toFixed(1)}h
             </p>
             
-            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 10px 0; letter-spacing: 1px;">📅 AGENDA SUGERIDA PARA HOY</p>
+            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 10px 0; letter-spacing: 1px;">📅 SMART AGENDA SUGGESTION</p>
             <ul style="list-style:none; padding:0; margin:0; font-size: 0.85rem; opacity: 0.8;">
                 ${currentAISuggestion.map(item => `
                     <li style="margin-bottom: 8px;"><b>${item.time}</b> - ${item.name} ${item.icon}</li>
@@ -499,22 +484,39 @@ function addTaskToDay(icon, name) {
     if (!targetDayContainer) return; 
     const newTaskHTML = `
     <div class="sub-task-item">
-        <div class="task-details">
+        <div class="task-details" style="display: flex; align-items: center; gap: 5px;">
             <span class="task-icon">${icon}</span>
             <span class="task-time" contenteditable="true">00:00</span>
             <span class="task-name" contenteditable="true">${name}</span>
+            <button class="task-type-btn" style="font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--color-grafito); background: transparent; color: var(--color-grafito); cursor: pointer; margin-left: 5px;" onclick="toggleTaskType(this)">FIXED</button>
         </div>
         <div class="timer-container-right">
             <button class="timer-play-btn" onclick="completeTask(this)">✔</button>
             <button class="delete-task-btn" onclick="deleteTask(this)">✖</button>
         </div>
     </div>
-`;
+    `;
     const addBtn = targetDayContainer.querySelector('.add-task-btn');
     addBtn.insertAdjacentHTML('beforebegin', newTaskHTML);
     closeModals(); 
     
-    saveAgendaState(); // ✨ Toma foto al agregar tarea
+    saveAgendaState(); // Toma foto al agregar tarea
+}
+
+// ✨ NUEVA FUNCIÓN: Cambia entre FIXED y FLEX
+function toggleTaskType(btn) {
+    if (btn.innerText === "FIXED") {
+        btn.innerText = "FLEX";
+        btn.style.backgroundColor = "rgba(41, 128, 185, 0.1)"; // Un azul muy sutil
+        btn.style.color = "#2980b9";
+        btn.style.border = "1px solid #2980b9";
+    } else {
+        btn.innerText = "FIXED";
+        btn.style.backgroundColor = "transparent";
+        btn.style.color = "var(--color-grafito)";
+        btn.style.border = "1px dashed var(--color-grafito)";
+    }
+    saveAgendaState(); // Guardamos el cambio en la foto
 }
 
 function deleteTask(btn) {
@@ -610,13 +612,14 @@ function applySuggestedLayout() {
     const container = targetDay.querySelector('.daily-tasks-container');
     const addBtn = container.querySelector('.add-task-btn');
 
-  currentAISuggestion.forEach(task => {
+currentAISuggestion.forEach(task => {
         const newTaskHTML = `
             <div class="sub-task-item">
-                <div class="task-details">
+                <div class="task-details" style="display: flex; align-items: center; gap: 5px;">
                     <span class="task-icon">${task.icon}</span>
                     <span class="task-time" contenteditable="true">${task.time}</span>
                     <span class="task-name" contenteditable="true">${task.name}</span>
+                    <button class="task-type-btn" style="font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--color-grafito); background: transparent; color: var(--color-grafito); cursor: pointer; margin-left: 5px;" onclick="toggleTaskType(this)">${task.type || 'FIXED'}</button>
                 </div>
                 <div class="timer-container-right">
                     <button class="timer-play-btn" onclick="completeTask(this)">✔</button>
