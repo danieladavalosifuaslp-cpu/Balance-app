@@ -164,21 +164,21 @@ function logMood(moodType, btnElement) {
 
 /* =========================================
    4. B-IA ENGINE (MOTOR PREDICTIVO ANOVA)
-   Fusión Definitiva: Nutrición Cognitiva (Macros + Menú Propuesto)
+   Fusión Definitiva: Distribución de Tiempo y Agenda Inteligente
 ========================================= */
 
 let currentAISuggestion = []; 
 
-// --- FUNCIÓN AUXILIAR: Calcula tu Baseline real (VERSIÓN PRODUCCIÓN) ---
+// --- FUNCIÓN AUXILIAR: Calcula tu Baseline real ---
 function getPersonalBaseline(history) {
-    let baseline = { deep: 5, admin: 2, social: 1 }; // Default si eres nueva
-    if (history.length < 5) return baseline; // Candado: Necesita 5 datos para promediar
+    let baseline = { deep: 5, admin: 2, social: 1 }; 
+    if (history.length < 5) return baseline; 
 
     const normalDays = history.filter(log => log.energyLeft >= 2);
     if (normalDays.length > 0) {
         let totalDeep = 0, totalAdmin = 0, totalSocial = 0;
         normalDays.forEach(log => {
-            const hrs = log.durationSeconds / 3600; // Matemáticas reales
+            const hrs = log.durationSeconds / 3600; 
             const name = log.taskName.toLowerCase();
             if (name.includes("deep") || name.includes("study") || name.includes("paper") || name.includes("mechanics")) totalDeep += hrs;
             else if (name.includes("admin") || name.includes("routine") || name.includes("meeting")) totalAdmin += hrs;
@@ -233,7 +233,7 @@ function runANOVAPrediction() {
 
     // --- PARTE B: SOP DYNAMIC OVERRIDE ---
     let isSopOverride = false;
-    let menuType = "STANDARD"; // Puede ser HIGH_ENERGY, LOW_ENERGY o STANDARD
+    let menuType = "STANDARD"; 
 
     if (diagLower.includes("sop") || diagLower.includes("pcos")) {
         if ((phase === "Menstrual phase" || phase === "Luteal phase") && mood === "HAPPY" && latestEnergyToday === 3) {
@@ -269,13 +269,13 @@ function runANOVAPrediction() {
         }
     }
 
-    // --- ✨ PARTE D: MODELO DEL NUTRIÓLOGO (MACROS + MENÚ) ---
+   // --- ✨ PARTE D: DISTRIBUCIÓN DE TIEMPO Y AGENDA INTELIGENTE ---
     const myBaseline = getPersonalBaseline(historyDB);
     let deepHrs = parseFloat(myBaseline.deep);
     let adminHrs = parseFloat(myBaseline.admin);
     let socialHrs = parseFloat(myBaseline.social);
 
-    // Ajustamos los "Macros" matemáticamente
+    // Ajustamos la distribución matemáticamente según tu energía
     if (menuType === "HIGH_ENERGY") {
         deepHrs += (adminHrs * 0.2); 
         adminHrs -= (adminHrs * 0.2);
@@ -285,44 +285,81 @@ function runANOVAPrediction() {
         adminHrs += reduction;
     }
 
-    // Diseñamos el "Menú Propuesto" intercalando las horas
-    if (menuType === "HIGH_ENERGY") {
-        currentAISuggestion = [
-            { time: "08:00", name: "Heavy Deep Work (Block 1)", icon: "🧠" },
-            { time: "10:30", name: "Active Rest / Stretch", icon: "☕" },
-            { time: "11:00", name: "Heavy Deep Work (Block 2)", icon: "🧠" },
-            { time: "13:00", name: "Lunch / Social", icon: "☕" },
-            { time: "14:00", name: "Complex Admin / Meetings", icon: "⚙️" },
-            { time: "15:30", name: "Sports / High Intensity", icon: "🏃🏽‍♀️" }
-        ];
-    } else if (menuType === "LOW_ENERGY") {
-        currentAISuggestion = [
-            { time: "09:00", name: "Light Admin / Emails", icon: "⚙️" },
-            { time: "10:30", name: "Walk / Regulate Cortisol", icon: "🏃🏽‍♀️" },
-            { time: "11:00", name: "Short Deep Work Sprint", icon: "🧠" },
-            { time: "12:30", name: "Lunch / Recovery", icon: "☕" },
-            { time: "13:30", name: "Routine Admin Tasks", icon: "⚙️" },
-            { time: "15:00", name: "Disconnect / Rest", icon: "☕" }
-        ];
-    } else {
-        currentAISuggestion = [
-            { time: "08:30", name: "Admin Setup", icon: "⚙️" },
-            { time: "09:30", name: "Deep Work Sprint", icon: "🧠" },
-            { time: "12:00", name: "Lunch Break", icon: "☕" },
-            { time: "13:30", name: "Detail-Oriented Deep Work", icon: "🧠" },
-            { time: "15:30", name: "Wrap-up Admin", icon: "⚙️" }
-        ];
-    }
+    // 1. Identificamos qué día de la semana es hoy
+    const daysArr = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const todayName = daysArr[new Date().getDay()];
 
-    // Renderizamos el recuadro visual en la app
+    // 2. Definimos tus rutinas base
+    // type: "fixed" significa que la IA no lo toca. type: "flex" es donde la IA decide.
+    const baseRoutines = {
+        'MONDAY': [
+            { time: "08:00", name: "Organización semanal", icon: "⚙️", type: "fixed" },
+            { time: "09:30", name: "Trabajo Profundo", icon: "🧠", type: "fixed" },
+            { time: "14:00", name: "Comida", icon: "☕", type: "fixed" },
+            { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
+            { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
+        ],
+        'TUESDAY': [
+            { time: "08:00", name: "Revisión de correos", icon: "⚙️", type: "fixed" },
+            { time: "09:00", name: "Trabajo Profundo (Bloque 1)", icon: "🧠", type: "fixed" },
+            { time: "13:00", name: "Trabajo Profundo (Bloque 2)", icon: "🧠", type: "fixed" },
+            { time: "15:00", name: "Comida", icon: "☕", type: "fixed" },
+            { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
+            { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" },
+            { time: "21:30", name: "Cena y Cierre de día", icon: "☕", type: "fixed" }
+        ],
+        'WEDNESDAY': [
+             { time: "09:00", name: "Agrega tu rutina aquí", icon: "⚙️", type: "fixed" },
+             { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
+             { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
+        ],
+        'THURSDAY': [
+             { time: "09:00", name: "Agrega tu rutina aquí", icon: "⚙️", type: "fixed" },
+             { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
+             { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
+        ],
+        'FRIDAY': [
+             { time: "09:00", name: "Cierre de semana", icon: "⚙️", type: "fixed" },
+             { time: "17:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
+             { time: "19:00", name: "FLEX_EVENING", icon: "", type: "flex" }
+        ],
+        'DEFAULT': [
+            { time: "08:30", name: "Inicio de día", icon: "⚙️", type: "fixed" },
+            { time: "10:00", name: "Bloque de Trabajo", icon: "🧠", type: "fixed" },
+            { time: "14:00", name: "Comida", icon: "☕", type: "fixed" },
+            { time: "18:00", name: "FLEX_WORKOUT", icon: "", type: "flex" },
+            { time: "20:00", name: "FLEX_EVENING", icon: "", type: "flex" }
+        ]
+    };
+
+    let todayRoutine = baseRoutines[todayName] || baseRoutines['DEFAULT'];
+
+    // 3. La IA inyecta las actividades flexibles según tu energía
+    currentAISuggestion = todayRoutine.map(task => {
+        if (task.type === "fixed") return task; 
+        
+        if (task.name === "FLEX_WORKOUT") {
+            if (menuType === "HIGH_ENERGY") return { time: task.time, name: "Deporte de Alta Intensidad (Fuerza/Cardio)", icon: "🏃🏽‍♀️" };
+            if (menuType === "LOW_ENERGY") return { time: task.time, name: "Estiramiento / Yoga suave", icon: "🧘🏽‍♀️" };
+            return { time: task.time, name: "Ejercicio Moderado", icon: "🏃🏽‍♀️" };
+        }
+        
+        if (task.name === "FLEX_EVENING") {
+            if (menuType === "HIGH_ENERGY") return { time: task.time, name: "Proyecto personal o Vida Social", icon: "🎨" };
+            if (menuType === "LOW_ENERGY") return { time: task.time, name: "Lectura ligera / Cero pantallas", icon: "☕" };
+            return { time: task.time, name: "Admin ligero en casa", icon: "⚙️" };
+        }
+    });
+
+    // 4. Renderizamos el texto visual limpio
     const suggestedScheduleHTML = `
         <div style="background: rgba(74,74,74,0.03); border: 1px dashed rgba(74,74,74,0.3); border-radius: 12px; padding: 15px; margin-top: 25px; text-align: left;">
-            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 5px 0; letter-spacing: 1px;">🤖 DAILY MACROS</p>
+            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 5px 0; letter-spacing: 1px;">📊 DISTRIBUCIÓN DE TIEMPO</p>
             <p style="font-size: 0.75rem; color: var(--color-grafito); margin-bottom: 15px;">
-                <b>Deep Work:</b> ${deepHrs.toFixed(1)}h | <b>Admin:</b> ${adminHrs.toFixed(1)}h | <b>Rest:</b> ${socialHrs.toFixed(1)}h
+                <b>Concentración:</b> ${deepHrs.toFixed(1)}h | <b>Mecánico:</b> ${adminHrs.toFixed(1)}h | <b>Descanso:</b> ${socialHrs.toFixed(1)}h
             </p>
             
-            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 10px 0; letter-spacing: 1px;">📅 SUGGESTED MENU</p>
+            <p style="font-size: 0.75rem; font-weight: bold; opacity: 0.5; margin: 0 0 10px 0; letter-spacing: 1px;">📅 AGENDA SUGERIDA PARA HOY</p>
             <ul style="list-style:none; padding:0; margin:0; font-size: 0.85rem; opacity: 0.8;">
                 ${currentAISuggestion.map(item => `
                     <li style="margin-bottom: 8px;"><b>${item.time}</b> - ${item.name} ${item.icon}</li>
@@ -331,7 +368,7 @@ function runANOVAPrediction() {
         </div>
     `;
 
-    // Imprimir resultados
+    // Imprimir resultados en pantalla
     energyEl.innerHTML = energyText + historicalWarning;
     focusEl.innerHTML = focusList + suggestedScheduleHTML; 
     document.getElementById('anova-results').style.display = 'block';
