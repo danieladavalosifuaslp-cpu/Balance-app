@@ -274,50 +274,68 @@ function runANOVAPrediction() {
     const todayIndex = new Date().getDay();
     const tomorrowIndex = (todayIndex + 1) % 7;
     const tomorrowName = daysArr[tomorrowIndex];
+// --- ✨ PARTE D: PREDICCIÓN PARA EL DÍA SIGUIENTE ---
+    // 1. Calculamos qué día es mañana
+    const daysArr = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const todayIndex = new Date().getDay();
+    const tomorrowIndex = (todayIndex + 1) % 7;
+    const tomorrowName = daysArr[tomorrowIndex];
 
-    // 2. Buscamos qué hiciste el último día que fue "mañana" (ej. el martes pasado)
-    const lastTimeThisDay = historyDB.filter(log => {
-        const logDate = new Date(log.date);
-        return daysArr[logDate.getDay()] === tomorrowName;
-    });
+    // 2. Tus plantillas reales (Aquí pones tus horas exactas y si son FIXED o FLEX)
+    const baseRoutines = {
+        'MONDAY': [
+            { time: "08:00", name: "Organización semanal", icon: "⚙️", type: "FIXED" },
+            { time: "09:30", name: "Trabajo Profundo", icon: "🧠", type: "FIXED" },
+            { time: "17:00", name: "Workout", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ],
+        'TUESDAY': [
+            { time: "08:00", name: "Revisión de correos", icon: "⚙️", type: "FIXED" },
+            { time: "09:00", name: "Trabajo Profundo (Bloque 1)", icon: "🧠", type: "FIXED" },
+            { time: "17:00", name: "Ejercicio", icon: "🏋🏽‍♀️", type: "FLEX" }
+        ],
+        'WEDNESDAY': [
+             { time: "09:00", name: "Lectura de papers", icon: "📚", type: "FIXED" },
+             { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+             { time: "18:00", name: "Actividad Física", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ],
+        'THURSDAY': [
+             { time: "08:30", name: "Reunión con asesores", icon: "⚙️", type: "FIXED" },
+             { time: "10:00", name: "Simulaciones COMSOL", icon: "🧠", type: "FIXED" },
+             { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+             { time: "18:00", name: "Deporte", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ],
+        'FRIDAY': [
+             { time: "09:00", name: "Cierre de semana", icon: "⚙️", type: "FIXED" },
+             { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+             { time: "17:00", name: "Vida Social / Libre", icon: "🎨", type: "FLEX" }
+        ],
+        'DEFAULT': [
+            { time: "09:00", name: "Inicio de día", icon: "⚙️", type: "FIXED" },
+            { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+            { time: "18:00", name: "Actividad libre", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ]
+    };
 
-    // 3. Creamos la base de la agenda (si no hay historia, usamos una base genérica)
-    let tomorrowRoutine = [];
+    // Tomamos la plantilla del día de mañana
+    let tomorrowRoutine = baseRoutines[tomorrowName] || baseRoutines['DEFAULT'];
 
-    if (lastTimeThisDay.length > 0) {
-        // Agrupamos por nombre para no repetir
-        const uniqueTasks = [...new Set(lastTimeThisDay.map(l => l.taskName))];
-        tomorrowRoutine = uniqueTasks.map(name => {
-            return { 
-                time: "09:00", // Hora tentativa
-                name: name, 
-                icon: "📋", 
-                type: name.toLowerCase().includes("gym") || name.toLowerCase().includes("workout") || name.toLowerCase().includes("social") ? "FLEX" : "FIXED" 
-            };
-        });
-    } else {
-        // Plantilla de emergencia si no hay datos previos
-        tomorrowRoutine = [
-            { time: "08:00", name: "Morning Routine", icon: "☀️", type: "FIXED" },
-            { time: "09:00", name: "Deep Work Block", icon: "🧠", type: "FIXED" },
-            { time: "17:00", name: "FLEX_WORKOUT", icon: "🏃🏽‍♀️", type: "FLEX" }
-        ];
-    }
-
-    // 4. La IA ajusta los bloques FLEX según tu energía de los últimos días
+    // 3. La IA ajusta SOLO los bloques FLEX según tu energía de HOY
     currentAISuggestion = tomorrowRoutine.map(task => {
-        if (task.type === "FIXED") return task;
+        if (task.type === "FIXED") return task; // Respeta tus horas de trabajo/comida
         
         const latestEnergy = historyDB.length > 0 ? historyDB[historyDB.length - 1].energyLeft : 2;
         
-        if (task.name.toLowerCase().includes("workout") || task.name.toLowerCase().includes("gym")) {
-            if (latestEnergy === 1) return { time: task.time, name: "Recovery / Yoga", icon: "🧘🏽‍♀️", type: "FLEX" };
-            if (latestEnergy === 3) return { time: task.time, name: "High Intensity Session", icon: "🏋🏽‍♀️", type: "FLEX" };
-        }
+        // Si tienes la batería en 1 (Baja), cambia tu bloque FLEX a algo suave
+        if (latestEnergy === 1) return { time: task.time, name: "Recovery / Yoga", icon: "🧘🏽‍♀️", type: "FLEX" };
+        
+        // Si tienes la batería en 3 (Alta), te sugiere subir la intensidad
+        if (latestEnergy === 3) return { time: task.time, name: "High Intensity Session", icon: "🏋🏽‍♀️", type: "FLEX" };
+        
+        // Si tienes la batería normal, deja la actividad que pusiste en la plantilla
         return task;
     });
 
-    // 5. Renderizamos el aviso de que es para MAÑANA
+    // 4. Renderizamos el aviso de que es para MAÑANA
     const suggestedScheduleHTML = `
         <div style="background: rgba(74,74,74,0.03); border: 1px dashed rgba(74,74,74,0.3); border-radius: 12px; padding: 15px; margin-top: 25px; text-align: left;">
             <p style="font-size: 0.75rem; font-weight: bold; color: #2980b9; margin: 0 0 10px 0; letter-spacing: 1px;">🔮 PLANNING FOR ${tomorrowName}</p>
