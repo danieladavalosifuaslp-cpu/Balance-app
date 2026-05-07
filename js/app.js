@@ -274,12 +274,6 @@ function runANOVAPrediction() {
     const todayIndex = new Date().getDay();
     const tomorrowIndex = (todayIndex + 1) % 7;
     const tomorrowName = daysArr[tomorrowIndex];
-// --- ✨ PARTE D: PREDICCIÓN PARA EL DÍA SIGUIENTE ---
-    // 1. Calculamos qué día es mañana
-    const daysArr = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-    const todayIndex = new Date().getDay();
-    const tomorrowIndex = (todayIndex + 1) % 7;
-    const tomorrowName = daysArr[tomorrowIndex];
 
     // 2. Tus plantillas reales (Aquí pones tus horas exactas y si son FIXED o FLEX)
     const baseRoutines = {
@@ -351,6 +345,7 @@ function runANOVAPrediction() {
     focusEl.innerHTML = focusList + suggestedScheduleHTML; 
     document.getElementById('anova-results').style.display = 'block';
 }
+
 /* =========================================
    5. AGENDA DINÁMICA (CONFIGURACIÓN DE DÍAS)
 ========================================= */
