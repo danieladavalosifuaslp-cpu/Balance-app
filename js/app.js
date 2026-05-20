@@ -96,6 +96,7 @@ function saveProfile() {
     goToScreen('home-screen');
 }
 
+
 /* =========================================
    3. LÓGICA BIOLÓGICA
 ========================================= */
@@ -268,66 +269,82 @@ function runANOVAPrediction() {
         }
     }
 
-   // --- ✨ PARTE D: LECTURA REAL DE TU AGENDA Y PREDICCIÓN ---
+    // --- ✨ PARTE D: PREDICCIÓN PARA EL DÍA SIGUIENTE ---
+    // 1. Calculamos qué día es mañana
     const daysArr = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-    const tomorrowName = daysArr[(new Date().getDay() + 1) % 7];
+    const todayIndex = new Date().getDay();
+    const tomorrowIndex = (todayIndex + 1) % 7;
+    const tomorrowName = daysArr[tomorrowIndex];
 
-    const allDays = document.querySelectorAll('.task-day');
-    let targetDay = null;
-    allDays.forEach(div => {
-        if (div.innerText === tomorrowName) targetDay = div.parentElement;
-    });
+    // 2. Tus plantillas reales
+    const baseRoutines = {
+        'MONDAY': [
+            { time: "08:00", name: "Organización semanal", icon: "⚙️", type: "FIXED" },
+            { time: "09:30", name: "Trabajo Profundo", icon: "🧠", type: "FIXED" },
+            { time: "17:00", name: "Workout", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ],
+        'TUESDAY': [
+            { time: "08:00", name: "Revisión de correos", icon: "⚙️", type: "FIXED" },
+            { time: "09:00", name: "Trabajo Profundo (Bloque 1)", icon: "🧠", type: "FIXED" },
+            { time: "17:00", name: "Ejercicio", icon: "🏋🏽‍♀️", type: "FLEX" }
+        ],
+        'WEDNESDAY': [
+             { time: "09:00", name: "Lectura de papers", icon: "📚", type: "FIXED" },
+             { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+             { time: "18:00", name: "Actividad Física", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ],
+        'THURSDAY': [
+             { time: "08:30", name: "Reunión con asesores", icon: "⚙️", type: "FIXED" },
+             { time: "10:00", name: "Simulaciones COMSOL", icon: "🧠", type: "FIXED" },
+             { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+             { time: "18:00", name: "Deporte", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ],
+        'FRIDAY': [
+             { time: "09:00", name: "Cierre de semana", icon: "⚙️", type: "FIXED" },
+             { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+             { time: "17:00", name: "Vida Social / Libre", icon: "🎨", type: "FLEX" }
+        ],
+        'DEFAULT': [
+            { time: "09:00", name: "Inicio de día", icon: "⚙️", type: "FIXED" },
+            { time: "14:00", name: "Comida", icon: "☕", type: "FIXED" },
+            { time: "18:00", name: "Actividad libre", icon: "🏃🏽‍♀️", type: "FLEX" }
+        ]
+    };
 
-    if (!targetDay) return alert("Please enable " + tomorrowName + " in your agenda.");
+    // Tomamos la plantilla del día de mañana
+    let tomorrowRoutine = baseRoutines[tomorrowName] || baseRoutines['DEFAULT'];
 
-    // Buscamos tareas en el día de mañana. Si está vacío, copiamos el ÚLTIMO día que llenaste.
-    let taskElements = targetDay.querySelectorAll('.sub-task-item');
-    let sourceDay = tomorrowName;
+    // 3. EL CEREBRO PREDICTIVO: Cruzar Fase + Humor Histórico
+    const historicalMatches = historyDB.filter(log => 
+        log.phase === phase && log.mood === mood
+    );
 
-    if (taskElements.length === 0) {
-        const allContainers = Array.from(document.querySelectorAll('.task-day')).map(d => d.parentElement);
-        for (let i = allContainers.length - 1; i >= 0; i--) {
-            const tasksInside = allContainers[i].querySelectorAll('.sub-task-item');
-            if (tasksInside.length > 0) {
-                taskElements = tasksInside;
-                sourceDay = allContainers[i].querySelector('.task-day').innerText;
-                break;
-            }
-        }
+    let historicalBattery = 2; 
+    if (historicalMatches.length > 0) {
+        const totalEnergy = historicalMatches.reduce((sum, log) => sum + log.energyLeft, 0);
+        historicalBattery = totalEnergy / historicalMatches.length;
+    } else if (historyDB.length > 0) {
+        historicalBattery = historyDB[historyDB.length - 1].energyLeft;
     }
 
-    if (taskElements.length === 0) {
-        alert("Your agenda is completely empty! Add some tasks to any day first.");
-        return;
-    }
-
-    let tomorrowRoutine = [];
-    taskElements.forEach(item => {
-        const time = item.querySelector('.task-time').innerText;
-        const name = item.querySelector('.task-name').innerText;
-        const icon = item.querySelector('.task-icon').innerText;
-        const typeBtn = item.querySelector('.task-type-btn');
-        const type = typeBtn ? typeBtn.innerText : 'FIXED';
-        tomorrowRoutine.push({ time, name, icon, type });
-    });
-
-    // La IA ajusta SOLO los bloques FLEX
     currentAISuggestion = tomorrowRoutine.map(task => {
         if (task.type === "FIXED") return task; 
         
-        const latestEnergy = historyDB.length > 0 ? historyDB[historyDB.length - 1].energyLeft : 2;
-        const nameLower = task.name.toLowerCase();
-        
-        if (nameLower.includes("wo") || nameLower.includes("workout") || nameLower.includes("gym") || nameLower.includes("ejercicio")) {
-            if (latestEnergy === 1) return { time: task.time, name: "Recovery / Yoga", icon: "🧘🏽‍♀️", type: "FLEX" };
-            if (latestEnergy === 3) return { time: task.time, name: "High Intensity Session", icon: "🏋🏽‍♀️", type: "FLEX" };
+        if (historicalBattery < 1.5) {
+            return { time: task.time, name: "Recovery / Gentle Yoga", icon: "🧘🏽‍♀️", type: "FLEX" };
         }
+        
+        if (historicalBattery > 2.5) {
+            return { time: task.time, name: "Heavy Workout / Deep Sprint", icon: "🔥", type: "FLEX" };
+        }
+        
         return task;
     });
 
+    // 4. Renderizamos el aviso de que es para MAÑANA
     const suggestedScheduleHTML = `
         <div style="background: rgba(74,74,74,0.03); border: 1px dashed rgba(74,74,74,0.3); border-radius: 12px; padding: 15px; margin-top: 25px; text-align: left;">
-            <p style="font-size: 0.75rem; font-weight: bold; color: #2980b9; margin: 0 0 10px 0; letter-spacing: 1px;">🔮 PLANNING FOR ${tomorrowName} <small style="color:var(--color-grafito); font-weight:normal;">(Based on ${sourceDay})</small></p>
+            <p style="font-size: 0.75rem; font-weight: bold; color: #2980b9; margin: 0 0 10px 0; letter-spacing: 1px;">🔮 PLANNING FOR ${tomorrowName}</p>
             <ul style="list-style:none; padding:0; margin:0; font-size: 0.85rem; opacity: 0.8;">
                 ${currentAISuggestion.map(item => `
                     <li style="margin-bottom: 8px;"><b>${item.time}</b> - ${item.name} ${item.icon} <small style="opacity:0.5;">(${item.type})</small></li>
@@ -340,7 +357,6 @@ function runANOVAPrediction() {
     focusEl.innerHTML = focusList + suggestedScheduleHTML; 
     document.getElementById('anova-results').style.display = 'block';
 }
-
 /* =========================================
    5. AGENDA DINÁMICA (CONFIGURACIÓN DE DÍAS)
 ========================================= */
@@ -558,22 +574,22 @@ function completeTask(btn) {
 // Se activa cuando eliges una carita/pila en el modal de energía
 function logEnergy(level) {
     const currentPhase = localStorage.getItem('balance_current_phase') || 'Unknown';
+    const currentMood = localStorage.getItem('balance_current_mood') || 'UNKNOWN'; // Añadimos la lectura del humor
     
-    // EL DATO MAESTRO: Aquí se une todo para el ANOVA
+    // EL DATO MAESTRO: Ahora guardamos todas las variables para la IA
     const newLog = {
         taskName: lastStoppedTask.name,
         durationSeconds: lastStoppedTask.duration,
-        energyLeft: level, // 1=Low, 2=Med, 3=High
+        energyLeft: level, 
         phase: currentPhase,
+        mood: currentMood, // Inyectamos el humor al historial
         date: new Date().toLocaleDateString()
     };
 
-    // Leemos el historial viejo de localStorage y le "inyectamos" el nuevo registro
     let historyDB = JSON.parse(localStorage.getItem('balance_history_db')) || [];
     historyDB.push(newLog);
     localStorage.setItem('balance_history_db', JSON.stringify(historyDB));
 
-    // Cerramos el modal para volver a la agenda
     closeModals(); 
 }
 
@@ -587,6 +603,7 @@ function applySuggestedLayout() {
     const allDays = document.querySelectorAll('.task-day');
     let targetDay = null;
     
+    // Buscamos el bloque que corresponde a mañana
     allDays.forEach(div => {
         if (div.innerText === tomorrowName) targetDay = div.parentElement;
     });
@@ -596,23 +613,14 @@ function applySuggestedLayout() {
     const container = targetDay.querySelector('.daily-tasks-container');
     const addBtn = container.querySelector('.add-task-btn');
 
-    // ✨ EL SECRETO: Borramos las tareas de mañana (si había) para no duplicarlas
-    const oldTasks = container.querySelectorAll('.sub-task-item');
-    oldTasks.forEach(task => task.remove());
-
     currentAISuggestion.forEach(task => {
-        // Aplicamos los estilos de botón según si es FLEX o FIXED
-        const btnBg = task.type === "FLEX" ? "rgba(41, 128, 185, 0.1)" : "transparent";
-        const btnColor = task.type === "FLEX" ? "#2980b9" : "var(--color-grafito)";
-        const btnBorder = task.type === "FLEX" ? "1px solid #2980b9" : "1px dashed var(--color-grafito)";
-
         const newTaskHTML = `
             <div class="sub-task-item">
                 <div class="task-details" style="display: flex; align-items: center; gap: 5px;">
                     <span class="task-icon">${task.icon}</span>
                     <span class="task-time" contenteditable="true">${task.time}</span>
                     <span class="task-name" contenteditable="true">${task.name}</span>
-                    <button class="task-type-btn" style="font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; border: ${btnBorder}; background: ${btnBg}; color: ${btnColor}; cursor:pointer; margin-left: 5px;" onclick="toggleTaskType(this)">${task.type}</button>
+                    <button class="task-type-btn" style="font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; border: 1px dashed var(--color-grafito); background: transparent; color: var(--color-grafito);" onclick="toggleTaskType(this)">${task.type || 'FIXED'}</button>
                 </div>
                 <div class="timer-container-right">
                     <button class="timer-play-btn" onclick="completeTask(this)">✔</button>
@@ -625,12 +633,14 @@ function applySuggestedLayout() {
 
     alert("Schedule applied to " + tomorrowName + "!");
     
+    // Abre automáticamente el día de mañana para que veas el cambio
     const dayHeader = targetDay.querySelector('.task-day');
     if (!dayHeader.classList.contains('active')) toggleDay(dayHeader);
     
     saveAgendaState();
     goToScreen('home-screen');
 }
+
 /* =========================================
    9. MEMORIA VISUAL DE LA AGENDA
 ========================================= */
